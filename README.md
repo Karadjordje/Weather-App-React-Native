@@ -13,7 +13,7 @@ To make this app work at your local envirment create apiKeys.js file at root of 
     
 More info on API-s used here:
 
-https://ipstack.com/documentation
-https://developers.google.com/custom-search/v1/introduction#api_overview
-You can create your 'custom search engine' here https://cse.google.com/cse/create/new
-https://openweathermap.org/api
+https://ipstack.com/documentation<br>
+https://developers.google.com/custom-search/v1/introduction#api_overview<br>
+You can create your 'custom search engine' here https://cse.google.com/cse/create/new<br>
+https://openweathermap.org/api<br>
