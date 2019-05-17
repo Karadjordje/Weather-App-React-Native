@@ -1,5 +1,6 @@
 import React from 'react';
 import {
+	View,
 	StyleSheet,
 	Text,
 	KeyboardAvoidingView,
@@ -9,7 +10,9 @@ import {
 	TouchableOpacity,
 	Alert,
 	Keyboard,
+	Platform
 } from 'react-native';
+import { Constants, Location, Permissions } from 'expo';
 import { formattedToday, capitalizeFirstLatter, getApiData } from './utils';
 
 import apiKeys from './apikeys';
@@ -35,7 +38,8 @@ export default class App extends React.Component {
 	constructor(props) {
 		super(props);
 		this.state = {
-			location: 'Weather in your area',
+			locationName: 'Weather in your area',
+			errorMessage: null,
 			userSearch: null,
 			today: new Date().toLocaleDateString('sr-Latn-RS', options),
 			weatherIconSrc: null,
@@ -48,17 +52,13 @@ export default class App extends React.Component {
 	}
 
 	componentDidMount() {
-		const ipApiParams = {
-			access_key: apiKeys.ipstack
-		}
-
-		getApiData(ipApi, ipApiParams)
-			.then(data => {
-				console.log('metoda neka', data)
-				let lat = data.latitude;
-				let lon = data.longitude;
-				this.onAppLoad(lat, lon);
+		if (Platform.OS === 'android' && !Constants.isDevice) {
+			this.setState({
+				errorMessage: 'Oops, this will not work on Sketch in an Android emulator. Try it on your device!',
 			});
+		} else {
+			this._getLocationAsync();
+		}
 
 		this.interval = setInterval(() => {
 			this.setState({
@@ -66,6 +66,31 @@ export default class App extends React.Component {
 			})
 		}, 1000);
 	}
+
+	_getLocationAsync = async () => {
+		let { status } = await Permissions.askAsync(Permissions.LOCATION);
+		let locationService = await Location.hasServicesEnabledAsync();
+
+		if (status !== 'granted' || !locationService) {
+			const ipApiParams = {
+				access_key: apiKeys.ipstack
+			}
+
+			getApiData(ipApi, ipApiParams)
+				.then(data => {
+					console.log('ipApi data', data)
+					let lat = data.latitude;
+					let lon = data.longitude;
+					this.onAppLoad(lat, lon);
+				});
+		}
+
+		let location = await Location.getCurrentPositionAsync({});
+		console.log('location data from device', location);
+		let lat = location.coords.latitude;
+		let lon = location.coords.longitude;
+		this.onAppLoad(lat, lon);
+	};
 
 	showHideLoader = (loading) => {
 		if (loading) {
@@ -136,20 +161,21 @@ export default class App extends React.Component {
 
 		getApiData(openWeatherApi, initialWeatherParams)
 			.then(data => {
-				if(data.error) {
+				if (data.error) {
 					Alert.alert(
 						'Bad request',
-						'There was on error with you request. Please try again!'					)
+						'There was on error with you request. Please try again!'
+					)
 				}
 
-				let location = data.name;
+				let locationName = data.name;
 				let currentTemp = data.main.temp.toFixed(0);
 				let icon = data.weather[0].icon;
 				let desc = capitalizeFirstLatter(data.weather[0].description);
-				this.imageSearch(location);
+				this.imageSearch(locationName);
 
 				this.setState({
-					location,
+					locationName,
 					currentTemp,
 					weatherIconSrc: `http://openweathermap.org/img/w/${icon}.png`,
 					weatherDesc: desc
@@ -160,35 +186,52 @@ export default class App extends React.Component {
 	}
 
 	render() {
+		const {
+			errorMessage,
+			imgUrl,
+			weatherIconSrc,
+			locationName,
+			weatherDesc,
+			currentTemp
+		} = this.state;
+
+		if (errorMessage) {
+			return (
+				<View style={styles.container}>
+					<Text style={styles.name}>{errorMessage}</Text>
+				</View>
+			);
+		}
+
 		return (
 			<ImageBackground
 				source={{
-					uri: this.state.imgUrl
+					uri: imgUrl
 				}}
-				style={{width: '100%', height:'100%'}}
+				style={{ width: '100%', height: '100%' }}
 			>
 				<KeyboardAvoidingView style={styles.container} behavior="padding" enabled>
 					{
-						this.state.weatherIconSrc &&
-							<Image
-								source={{ uri: this.state.weatherIconSrc }}
-								style={{ width: 80, height: 80 }}
-							/>
+						weatherIconSrc &&
+						<Image
+							source={{ uri: weatherIconSrc }}
+							style={{ width: 80, height: 80 }}
+						/>
 					}
 
 					{
-						this.state.location &&
-						<Text style={styles.name}>{this.state.location}</Text>
+						locationName &&
+						<Text style={styles.name}>{locationName}</Text>
 					}
 
 					{
-						this.state.weatherDesc &&
-						<Text style={styles.type}>{this.state.weatherDesc}</Text>
+						weatherDesc &&
+						<Text style={styles.type}>{weatherDesc}</Text>
 					}
 
 					{
-						this.state.currentTemp &&
-						<Text style={styles.temp}>{this.state.currentTemp} °C</Text>
+						currentTemp &&
+						<Text style={styles.temp}>{currentTemp} °C</Text>
 					}
 
 					<TextInput
