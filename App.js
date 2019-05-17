@@ -79,8 +79,7 @@ export default class App extends React.Component {
 			getApiData(ipApi, ipApiParams)
 				.then(data => {
 					console.log('ipApi data', data)
-					let lat = data.latitude;
-					let lon = data.longitude;
+					let { lat, lon } = data;
 					this.onAppLoad(lat, lon);
 				});
 		}
@@ -144,7 +143,7 @@ export default class App extends React.Component {
 		getApiData(googleImgApi, imageParams)
 			.then(data => {
 				console.log('google podaci za sliku', data);
-				let imgUrl = data.items[0].link
+				let imgUrl = data.items[0].link;
 				this.setState({
 					imgUrl
 				});
