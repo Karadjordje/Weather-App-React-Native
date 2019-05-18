@@ -188,7 +188,7 @@ export default class App extends React.Component {
 			>
 				{loading ?
 					<View style={styles.loadingWrap}>
-						<Text>Loading</Text>
+						<ActivityIndicator size="large" color="white" />
 					</View> : null
 				}
 				<KeyboardAvoidingView style={styles.container} behavior="padding" enabled>
