@@ -10,11 +10,12 @@ import {
 	TouchableOpacity,
 	Alert,
 	Keyboard,
-	Platform
+	Platform,
+	ActivityIndicator,
 } from 'react-native';
 import { Constants, Location, Permissions } from 'expo';
 import { formattedToday, capitalizeFirstLatter, getApiData } from './utils';
-
+import Background from './Background';
 import apiKeys from './apikeys';
 
 const options = {
@@ -33,6 +34,9 @@ const ipApi = 'http://api.ipstack.com/check';
 const openWeatherApi = 'http://api.openweathermap.org/data/2.5/weather';
 const googleImgApi = 'https://www.googleapis.com/customsearch/v1';
 
+function now() {
+	return new Date().toLocaleDateString('sr-Latn-RS', options);
+}
 
 export default class App extends React.Component {
 	constructor(props) {
@@ -41,13 +45,14 @@ export default class App extends React.Component {
 			locationName: 'Weather in your area',
 			errorMessage: null,
 			userSearch: null,
-			today: new Date().toLocaleDateString('sr-Latn-RS', options),
+			today: now(),
 			weatherIconSrc: null,
 			weatherDesc: null,
 			currentTemp: null,
 			dataError: false,
 			userIpData: {},
-			imgUrl: 'https://scontent-sin6-2.cdninstagram.com/vp/04837b8add6b2149a69dd0d89f0e70b8/5CF09871/t51.2885-15/e35/51353012_249238765964593_114478685069351006_n.jpg?_nc_ht=scontent-sin6-2.cdninstagram.com'
+			imgUrl: null,
+			loading: false,
 		}
 	}
 
@@ -116,8 +121,7 @@ export default class App extends React.Component {
 			APPID: apiKeys.openWeather
 		}
 
-		getApiData(openWeatherApi, initialWeatherParams)
-			.then(data => {
+		getApiData(openWeatherApi, initialWeatherParams).then(data => {
 				console.log(data);
 				let currentTemp = data.main.temp.toFixed(0);
 				let icon = data.weather[0].icon;
@@ -144,8 +148,9 @@ export default class App extends React.Component {
 			.then(data => {
 				console.log('google podaci za sliku', data);
 				let imgUrl = data.items[0].link;
+				console.log(data);
 				this.setState({
-					imgUrl
+					imgUrl,
 				});
 			})
 	}
@@ -157,14 +162,16 @@ export default class App extends React.Component {
 			mode: 'JSON',
 			APPID: apiKeys.openWeather
 		}
-
+		this.setState({ loading: true });
 		getApiData(openWeatherApi, initialWeatherParams)
-			.then(data => {
-				if (data.error) {
-					Alert.alert(
-						'Bad request',
-						'There was on error with you request. Please try again!'
+		.then(data => {
+			if (data.error) {
+				Alert.alert(
+					'Bad request',
+					'There was on error with you request. Please try again!'
 					)
+					this.setState({ loading: false });
+					return;
 				}
 
 				let locationName = data.name;
@@ -177,7 +184,8 @@ export default class App extends React.Component {
 					locationName,
 					currentTemp,
 					weatherIconSrc: `http://openweathermap.org/img/w/${icon}.png`,
-					weatherDesc: desc
+					weatherDesc: desc,
+					loading: false,
 				});
 
 				Keyboard.dismiss();
@@ -191,7 +199,8 @@ export default class App extends React.Component {
 			weatherIconSrc,
 			locationName,
 			weatherDesc,
-			currentTemp
+			currentTemp,
+			loading,
 		} = this.state;
 
 		if (errorMessage) {
@@ -203,12 +212,12 @@ export default class App extends React.Component {
 		}
 
 		return (
-			<ImageBackground
-				source={{
-					uri: imgUrl
-				}}
-				style={{ width: '100%', height: '100%' }}
+			<Background
+				city={locationName}
 			>
+				{loading ? <View style={styles.loadingWrap}>
+					<ActivityIndicator size="large" color="white" />
+				</View> : null}
 				<KeyboardAvoidingView style={styles.container} behavior="padding" enabled>
 					{
 						weatherIconSrc &&
@@ -251,7 +260,7 @@ export default class App extends React.Component {
 						{this.state.today}
 					</Text>
 				</KeyboardAvoidingView>
-			</ImageBackground>
+			</Background>
 		);
 	}
 }
@@ -304,5 +313,16 @@ const styles = StyleSheet.create({
 		color: '#000',
 		fontSize: 18,
 		fontWeight: 'bold'
+	},
+	loadingWrap: {
+		position: 'absolute',
+		backgroundColor: 'rgba(0,0,0,0.5)',
+		flex: 1,
+		alignItems: 'center',
+		justifyContent: 'center',
+		top: 0,
+		left: 0,
+		bottom: 0,
+		right: 0,
 	}
 });
