@@ -3,20 +3,9 @@ import {
 	View,
 	ImageBackground,
 } from 'react-native';
-import { Constants, Location, Permissions } from 'expo';
-import { formattedToday, capitalizeFirstLatter, getApiData } from './utils';
+import { getApiData } from './utils';
 
 import apiKeys from './apikeys';
-
-const options = {
-	weekday: 'short',
-	year: 'numeric',
-	month: 'short',
-	day: 'numeric',
-	hour: 'numeric',
-	minute: 'numeric',
-	second: 'numeric'
-};
 
 import defaultImage from './assets/uvac.jpg';
 const googleImgApi = 'https://www.googleapis.com/customsearch/v1';
@@ -69,15 +58,20 @@ class Background extends React.Component {
             imgUrl,
             loading,
             error,
-        } = this.state;
+		} = this.state;
+
         const {
             children,
-        } = this.props;
+		} = this.props;
+
         if (loading || error) {
-            return (<View style={{ backgroundColor: 'black', width: '100%', height: '100%', flex: 1 }}>
-                {children}
-            </View>);
-        }
+            return (
+				<View style={{ backgroundColor: 'black', width: '100%', height: '100%', flex: 1 }}>
+					{children}
+				</View>
+			);
+		}
+
 		return (
 			<ImageBackground
 				source={imgUrl ? { uri: imgUrl } : defaultImage}

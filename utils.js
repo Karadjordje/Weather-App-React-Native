@@ -7,14 +7,16 @@ const options = {
 	minute: 'numeric',
 	second: 'numeric'
 };
-export const formattedToday = new Date().toLocaleDateString('sr-Latn-RS', options);
+
+export const formattedToday = () => {
+	return new Date().toLocaleDateString('sr-Latn-RS', options);
+}
 
 export const capitalizeFirstLatter = (str) => {
 	return str.split(' ').map(item => {
 		return item.slice(0, 1).toUpperCase() + item.slice(1);
 	}).join(' ');
 };
-
 
 // Params has to be object
 export const getApiData = (url, params) => {

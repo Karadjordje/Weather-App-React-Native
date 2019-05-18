@@ -5,7 +5,6 @@ import {
 	Text,
 	KeyboardAvoidingView,
 	TextInput,
-	ImageBackground,
 	Image,
 	TouchableOpacity,
 	Alert,
@@ -18,25 +17,9 @@ import { formattedToday, capitalizeFirstLatter, getApiData } from './utils';
 import Background from './Background';
 import apiKeys from './apikeys';
 
-const options = {
-	weekday: 'short',
-	year: 'numeric',
-	month: 'short',
-	day: 'numeric',
-	hour: 'numeric',
-	minute: 'numeric',
-	second: 'numeric'
-};
-
-import defaultImage from './assets/uvac.jpg'
-
 const ipApi = 'http://api.ipstack.com/check';
 const openWeatherApi = 'http://api.openweathermap.org/data/2.5/weather';
 const googleImgApi = 'https://www.googleapis.com/customsearch/v1';
-
-function now() {
-	return new Date().toLocaleDateString('sr-Latn-RS', options);
-}
 
 export default class App extends React.Component {
 	constructor(props) {
@@ -45,7 +28,7 @@ export default class App extends React.Component {
 			locationName: 'Weather in your area',
 			errorMessage: null,
 			userSearch: null,
-			today: now(),
+			today: formattedToday(),
 			weatherIconSrc: null,
 			weatherDesc: null,
 			currentTemp: null,
@@ -67,7 +50,7 @@ export default class App extends React.Component {
 
 		this.interval = setInterval(() => {
 			this.setState({
-				today: new Date().toLocaleDateString('sr-Latn-RS', options)
+				today: formattedToday()
 			})
 		}, 1000);
 	}
@@ -91,22 +74,9 @@ export default class App extends React.Component {
 
 		let location = await Location.getCurrentPositionAsync({});
 		console.log('location data from device', location);
-		let lat = location.coords.latitude;
-		let lon = location.coords.longitude;
+		let {lat, lon} = location.coords;
 		this.onAppLoad(lat, lon);
 	};
-
-	showHideLoader = (loading) => {
-		if (loading) {
-			this.setState({
-				loading: true
-			});
-		} else {
-			this.setState({
-				loading: false
-			});
-		}
-	}
 
 	componentWillUnmount() {
 		clearInterval(this.interval);
@@ -162,40 +132,41 @@ export default class App extends React.Component {
 			mode: 'JSON',
 			APPID: apiKeys.openWeather
 		}
+
 		this.setState({ loading: true });
+
 		getApiData(openWeatherApi, initialWeatherParams)
-		.then(data => {
-			if (data.error) {
-				Alert.alert(
-					'Bad request',
-					'There was on error with you request. Please try again!'
-					)
-					this.setState({ loading: false });
-					return;
-				}
+			.then(data => {
+				if (data.error) {
+					Alert.alert(
+						'Bad request',
+						'There was on error with you request. Please try again!'
+						)
+						this.setState({ loading: false });
+						return;
+					}
 
-				let locationName = data.name;
-				let currentTemp = data.main.temp.toFixed(0);
-				let icon = data.weather[0].icon;
-				let desc = capitalizeFirstLatter(data.weather[0].description);
-				this.imageSearch(locationName);
+					let locationName = data.name;
+					let currentTemp = data.main.temp.toFixed(0);
+					let icon = data.weather[0].icon;
+					let desc = capitalizeFirstLatter(data.weather[0].description);
+					this.imageSearch(locationName);
 
-				this.setState({
-					locationName,
-					currentTemp,
-					weatherIconSrc: `http://openweathermap.org/img/w/${icon}.png`,
-					weatherDesc: desc,
-					loading: false,
-				});
+					this.setState({
+						locationName,
+						currentTemp,
+						weatherIconSrc: `http://openweathermap.org/img/w/${icon}.png`,
+						weatherDesc: desc,
+						loading: false,
+					});
 
-				Keyboard.dismiss();
-			})
+					Keyboard.dismiss();
+				})
 	}
 
 	render() {
 		const {
 			errorMessage,
-			imgUrl,
 			weatherIconSrc,
 			locationName,
 			weatherDesc,
@@ -215,9 +186,11 @@ export default class App extends React.Component {
 			<Background
 				city={locationName}
 			>
-				{loading ? <View style={styles.loadingWrap}>
-					<ActivityIndicator size="large" color="white" />
-				</View> : null}
+				{loading ?
+					<View style={styles.loadingWrap}>
+						<Text>Loading</Text>
+					</View> : null
+				}
 				<KeyboardAvoidingView style={styles.container} behavior="padding" enabled>
 					{
 						weatherIconSrc &&
