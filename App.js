@@ -11,6 +11,8 @@ import {
 	Keyboard,
 	Platform,
 	ActivityIndicator,
+	PanResponder,
+	Animated
 } from 'react-native';
 import { Constants, Location, Permissions } from 'expo';
 import { formattedToday, capitalizeFirstLatter, getApiData } from './utils';
@@ -36,7 +38,45 @@ export default class App extends React.Component {
 			userIpData: {},
 			imgUrl: null,
 			loading: false,
+			gestureY: new Animated.Value(75),
 		}
+
+		this._panResponder = PanResponder.create({
+			// Ask to be the responder:
+			onMoveShouldSetResponderCapture: (evt, gestureState) => true,
+			onMoveShouldSetPanResponder: (evt, gestureState) => true,
+
+			onPanResponderGrant: (evt, gestureState) => {
+				// The gesture has started. Show visual feedback so the user knows
+				// what is happening!
+				// gestureState.d{x,y} will be set to zero now
+				console.log('onPanResponderGrant', evt, gestureState);
+				this.state.gestureY.setOffset(this.state.gestureY._value);
+			},
+			// The most recent move distance is gestureState.move{X,Y}
+			// The accumulated gesture distance since becoming responder is
+			// gestureState.d{x,y}
+			onPanResponderMove: Animated.event([
+				null, { dy: this.state.gestureY },
+			]),
+			onPanResponderRelease: (evt, gestureState) => {
+				// The user has released all touches while this view is the
+				// responder. This typically means a gesture has succeeded
+				// console.log('onPanResponderRelease', evt, gestureState);
+				this.state.gestureY.flattenOffset();
+				// console.log('test', gestureState);
+
+				// if (gestureState.dy < -100) {
+				// 	Animated.spring(this.state.gestureY, {
+				// 		toValue: -75,
+				// 	}).start();
+				// } else if (gestureState.dy > 100) {
+				// 	Animated.spring(this.state.gestureY, {
+				// 		toValue: 75,
+				// 	}).start();
+				// }
+			},
+		});
 	}
 
 	componentDidMount() {
@@ -48,11 +88,11 @@ export default class App extends React.Component {
 			this._getLocationAsync();
 		}
 
-		this.interval = setInterval(() => {
-			this.setState({
-				today: formattedToday()
-			})
-		}, 1000);
+		// this.interval = setInterval(() => {
+		// 	this.setState({
+		// 		today: formattedToday()
+		// 	})
+		// }, 1000);
 	}
 
 	_getLocationAsync = async () => {
@@ -174,6 +214,14 @@ export default class App extends React.Component {
 			loading,
 		} = this.state;
 
+		let changeHeight = this.state.gestureY.interpolate({
+			inputRange: [-75, 75],
+			outputRange: [150, 50],
+			extrapolate: 'clamp',
+		});
+
+		// console.log(this.state.gestureDY);
+
 		if (errorMessage) {
 			return (
 				<View style={styles.container}>
@@ -191,7 +239,7 @@ export default class App extends React.Component {
 						<ActivityIndicator size="large" color="white" />
 					</View> : null
 				}
-				<KeyboardAvoidingView style={styles.container} behavior="padding" enabled>
+				<KeyboardAvoidingView style={styles.container} behavior="padding" enabled {...this._panResponder.panHandlers}>
 					{
 						weatherIconSrc &&
 						<Image
@@ -233,6 +281,30 @@ export default class App extends React.Component {
 						{this.state.today}
 					</Text>
 				</KeyboardAvoidingView>
+
+				<Animated.View
+					style={{
+						position: 'absolute',
+						bottom: 0,
+						left: 0,
+						right: 0,
+						zIndex: 3,
+						height: changeHeight,
+						backgroundColor: 'black',
+						flex: 1,
+						alignItems: 'center',
+						justifyContent: 'center',
+					}}
+				>
+					<Animated.Text
+						style={{
+							color: '#fff',
+							fontSize: 30,
+						}}
+					>
+						Title goes here
+					</Animated.Text>
+				</Animated.View>
 			</Background>
 		);
 	}
