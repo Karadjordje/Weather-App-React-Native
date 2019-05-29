@@ -11,6 +11,8 @@ import {
 	Keyboard,
 	Platform,
 	ActivityIndicator,
+	PanResponder,
+	Animated,
 } from 'react-native';
 import { Constants, Location, Permissions } from 'expo';
 import { formattedToday, capitalizeFirstLatter, getApiData } from './utils';
@@ -36,7 +38,74 @@ export default class App extends React.Component {
 			userIpData: {},
 			imgUrl: null,
 			loading: false,
+			gestureY: new Animated.Value(-125),
 		}
+
+		this._panResponder = PanResponder.create({
+			// Ask to be the responder:
+			onMoveShouldSetPanResponderCapture: (evt, gestureState) => {
+				// Don't do anything on taps
+				return Math.abs(gestureState.dx) > 3 && Math.abs(gestureState.dy) > 3;
+			},
+			onPanResponderGrant: (evt, gestureState) => {
+				// The gesture has started. Show visual feedback so the user knows
+				// what is happening!
+				// gestureState.d{x,y} will be set to zero now
+				console.log('onPanResponderGrant', gestureState);
+				this.state.gestureY.setOffset(this.state.gestureY._value);
+				this.state.gestureY.setValue(0);
+				console.log('gestureY on grant', this.state.gestureY);
+			},
+			// The most recent move distance is gestureState.move{X,Y}
+			// The accumulated gesture distance since becoming responder is
+			// gestureState.d{x,y}
+			onPanResponderMove: Animated.event([
+				null, { dy: this.state.gestureY },
+			]),
+			onPanResponderRelease: (evt, gestureState) => {
+				// The user has released all touches while this view is the
+				// responder. This typically means a gesture has succeeded
+				console.log('onPanResponderRelease', gestureState);
+				console.log('gestureState.dy', gestureState.dy);
+				this.state.gestureY.flattenOffset();
+
+				if (gestureState.dy < -50) {
+					console.log('mannje');
+					Animated.spring(this.state.gestureY, {
+						toValue: -125,
+						speed: 2,
+						bounciness: 0,
+						useNativeDriver: true,
+					}).start(() => this.state.gestureY.setValue(-125));
+					// this.state.gestureY.setValue(-125);
+				} else if (gestureState.dy > 50) {
+					console.log('vise');
+					Animated.spring(this.state.gestureY, {
+						toValue: 125,
+						speed: 2,
+						bounciness: 0,
+						useNativeDriver: true
+					}).start(() => this.state.gestureY.setValue(125));
+					// this.state.gestureY.setValue(125);
+				} else {
+					console.log('vrati gde je bilo');
+					let originalPos;
+					if (gestureState.dy < 0){
+						originalPos = 125
+					} else {
+						originalPos = -125
+					}
+
+					Animated.spring(this.state.gestureY, {
+						toValue: originalPos,
+						speed: 2,
+						bounciness: 0,
+						useNativeDriver: true
+					}).start(() => this.state.gestureY.setValue(originalPos));
+				}
+				console.log('gestureY on release', this.state.gestureY);
+			},
+		});
 	}
 
 	componentDidMount() {
@@ -174,6 +243,20 @@ export default class App extends React.Component {
 			loading,
 		} = this.state;
 
+		let translateY = this.state.gestureY.interpolate({
+			inputRange: [-125, 125],
+			outputRange: [200, 0],
+			extrapolate: 'clamp'
+		});
+
+		let opacity = this.state.gestureY.interpolate({
+			inputRange: [-125, 20],
+			outputRange: [1, 0],
+			extrapolate: 'clamp'
+		});
+
+		const AnimatedTouchable = Animated.createAnimatedComponent(TouchableOpacity);
+
 		if (errorMessage) {
 			return (
 				<View style={styles.container}>
@@ -191,7 +274,7 @@ export default class App extends React.Component {
 						<ActivityIndicator size="large" color="white" />
 					</View> : null
 				}
-				<KeyboardAvoidingView style={styles.container} behavior="padding" enabled>
+				<KeyboardAvoidingView style={styles.container} behavior="padding" enabled {...this._panResponder.panHandlers}>
 					{
 						weatherIconSrc &&
 						<Image
@@ -233,6 +316,64 @@ export default class App extends React.Component {
 						{this.state.today}
 					</Text>
 				</KeyboardAvoidingView>
+
+				<Animated.View
+					style={{
+						position: 'absolute',
+						bottom: 0,
+						left: 0,
+						right: 0,
+						zIndex: 3,
+						height: 200,
+						backgroundColor: 'black',
+						flex: 1,
+						alignItems: 'center',
+						justifyContent: 'center',
+						transform: [{ translateY }]
+					}}
+				>
+					<Animated.Text
+						style={{
+							color: '#fff',
+							fontSize: 30,
+						}}
+					>
+						Title goes here
+					</Animated.Text>
+				</Animated.View>
+
+				<AnimatedTouchable
+					style={{
+						position: 'absolute',
+						bottom: 0,
+						left: 0,
+						right: 0,
+						zIndex: 3,
+						height: 50,
+						backgroundColor: 'rgba(0,0,0,0.5)',
+						flex: 1,
+						alignItems: 'center',
+						justifyContent: 'center',
+						opacity
+					}}
+					onPress={
+						() => Animated.spring(this.state.gestureY, {
+							toValue: 125,
+							speed: 2,
+							bounciness: 0,
+							useNativeDriver: true
+						}).start(() => this.state.gestureY.setValue(125))
+					}
+				>
+					<Animated.Text
+						style={{
+							color: '#fff',
+							fontSize: 20,
+						}}
+					>
+						More data
+					</Animated.Text>
+				</AnimatedTouchable>
 			</Background>
 		);
 	}
