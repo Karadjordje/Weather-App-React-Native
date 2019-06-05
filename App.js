@@ -16,7 +16,7 @@ import {
 } from 'react-native';
 import { Constants, Location, Permissions } from 'expo';
 import { formattedToday, capitalizeFirstLatter, getApiData } from './utils';
-import Background from './Background';
+import Background from './components/Background';
 import apiKeys from './apikeys';
 
 const ipApi = 'http://api.ipstack.com/check';
@@ -173,27 +173,6 @@ export default class App extends React.Component {
 			})
 	}
 
-	imageSearch = (city) => {
-		const imageParams = {
-			q: city,
-			num: 1,
-			imgSize: 'xlarge',
-			searchType: 'image',
-			key: apiKeys.googleSearch,
-			cx: apiKeys.googleCx
-		}
-
-		getApiData(googleImgApi, imageParams)
-			.then(data => {
-				console.log('google podaci za sliku', data);
-				let imgUrl = data.items[0].link;
-				console.log(data);
-				this.setState({
-					imgUrl,
-				});
-			})
-	}
-
 	onSearchSubmit = () => {
 		const initialWeatherParams = {
 			q: this.state.userSearch,
@@ -219,7 +198,6 @@ export default class App extends React.Component {
 					let currentTemp = data.main.temp.toFixed(0);
 					let icon = data.weather[0].icon;
 					let desc = capitalizeFirstLatter(data.weather[0].description);
-					this.imageSearch(locationName);
 
 					this.setState({
 						locationName,

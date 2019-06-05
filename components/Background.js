@@ -3,11 +3,11 @@ import {
 	View,
 	ImageBackground,
 } from 'react-native';
-import { getApiData } from './utils';
+import { getApiData } from '../utils';
 
-import apiKeys from './apikeys';
+import apiKeys from '../apikeys';
 
-import defaultImage from './assets/uvac.jpg';
+import defaultImage from '../assets/uvac.jpg';
 const googleImgApi = 'https://www.googleapis.com/customsearch/v1';
 
 class Background extends React.Component {
@@ -77,7 +77,7 @@ class Background extends React.Component {
 				source={imgUrl ? { uri: imgUrl } : defaultImage}
                 style={{ width: '100%', height: '100%', flex: 1 }}
                 onError={() => this.setState({ error: true })}
-                defaultSource={require('./assets/dark.jpg')}
+                defaultSource={require('../assets/dark.jpg')}
 			>
 				{children}
 			</ImageBackground>
