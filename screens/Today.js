@@ -22,7 +22,7 @@ import apiKeys from './apikeys';
 const ipApi = 'http://api.ipstack.com/check';
 const openWeatherApi = 'http://api.openweathermap.org/data/2.5/weather';
 
-export default class App extends React.Component {
+export default class Today extends React.Component {
 	constructor(props) {
 		super(props);
 		this.state = {
