@@ -15,14 +15,14 @@ import {
 	Animated,
 } from 'react-native';
 import { Constants, Location, Permissions } from 'expo';
-import { formattedToday, capitalizeFirstLatter, getApiData } from './utils';
-import Background from './components/Background';
-import apiKeys from './apikeys';
+import { formattedToday, capitalizeFirstLatter, getApiData } from '../utils';
+import Background from '../components/Background';
+import apiKeys from '../apikeys';
 
 const ipApi = 'http://api.ipstack.com/check';
 const openWeatherApi = 'http://api.openweathermap.org/data/2.5/weather';
 
-export default class Today extends React.Component {
+export default class TodayScreen extends React.Component {
 	constructor(props) {
 		super(props);
 		this.state = {
@@ -356,6 +356,10 @@ export default class Today extends React.Component {
 		);
 	}
 }
+
+TodayScreen.navigationOptions = {
+	header: null,
+};
 
 const styles = StyleSheet.create({
 	container: {
