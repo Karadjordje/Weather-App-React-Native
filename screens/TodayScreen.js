@@ -1,424 +1,286 @@
 import React from 'react';
 import {
-	View,
-	StyleSheet,
-	Text,
-	KeyboardAvoidingView,
-	TextInput,
-	Image,
-	TouchableOpacity,
-	Alert,
-	Keyboard,
-	Platform,
-	ActivityIndicator,
-	PanResponder,
-	Animated,
+    View,
+    StyleSheet,
+    Text,
+    Image,
+    TouchableOpacity,
+    Alert,
+    Platform,
+    ActivityIndicator,
+    PanResponder,
+    Animated,
 } from 'react-native';
 import { Constants, Location, Permissions } from 'expo';
-import { formattedToday, capitalizeFirstLatter, getApiData } from '../utils';
+import { capitalizeFirstLatter, getApiData } from '../utils';
+
 import Background from '../components/Background';
+import CurrentTime from '../components/CurrentTime';
+
 import apiKeys from '../apikeys';
 
 const ipApi = 'http://api.ipstack.com/check';
 const openWeatherApi = 'http://api.openweathermap.org/data/2.5/weather';
 
 export default class TodayScreen extends React.Component {
-	constructor(props) {
-		super(props);
-		this.state = {
-			locationName: 'Weather in your area',
-			errorMessage: null,
-			userSearch: null,
-			today: formattedToday(),
-			weatherIconSrc: null,
-			weatherDesc: null,
-			currentTemp: null,
-			dataError: false,
-			userIpData: {},
-			imgUrl: null,
-			loading: false,
-			gestureY: new Animated.Value(125),
-		}
-		this._gestureY = 0;
-		// this.state.gestureY.setOffset(0);
-		this.state.gestureY.addListener(({ value }) => {
-			this._gestureY = value;
-		});
-		this._panResponder = PanResponder.create({
-			// Ask to be the responder:
-			onMoveShouldSetPanResponderCapture: (evt, gestureState) => {
-				// Don't do anything on taps
-				return Math.abs(gestureState.dx) > 3 && Math.abs(gestureState.dy) > 3;
-			},
-			onPanResponderGrant: (evt, gestureState) => {
-				// The gesture has started. Show visual feedback so the user knows
-				// what is happening!
-				// gestureState.d{x,y} will be set to zero now
-				// console.log('onPanResponderGrant', gestureState);
-				console.log(this.state.gestureY._value, this._gestureY);
-				this.state.gestureY.setOffset(this._gestureY);
-				this.state.gestureY.setValue(0);
-				console.log('gestureY on grant', this.state.gestureY);
-			},
-			// The most recent move distance is gestureState.move{X,Y}
-			// The accumulated gesture distance since becoming responder is
-			// gestureState.d{x,y}
-			onPanResponderMove: Animated.event([
-				null, { dy: this.state.gestureY },
-			]),
-			onPanResponderRelease: (evt, gestureState) => {
-				// The user has released all touches while this view is the
-				// responder. This typically means a gesture has succeeded
-				// console.log('onPanResponderRelease', gestureState);
-				// console.log('gestureState.dy', gestureState.dy);
-				this.state.gestureY.flattenOffset();
+    constructor(props) {
+        super(props);
+        this.state = {
+            gestureY: new Animated.Value(125),
+        };
 
-				if (gestureState.dy < -75) {
-					console.log('mannje');
-					console.log('vise');
-					Animated.spring(this.state.gestureY, {
-						toValue: -125,
-						useNativeDriver: true,
-					}).start();
-					// this.state.gestureY.setValue(-125);
-				} else if (gestureState.dy > 75) {
+        this._gestureY = 0;
+        // this.state.gestureY.setOffset(0);
+        this.state.gestureY.addListener(({ value }) => {
+            this._gestureY = value;
+        });
+        this._panResponder = PanResponder.create({
+            // Ask to be the responder:
+            onMoveShouldSetPanResponderCapture: (evt, gestureState) => {
+                // Don't do anything on taps
+                return Math.abs(gestureState.dx) > 3 && Math.abs(gestureState.dy) > 3;
+            },
+            onPanResponderGrant: (evt, gestureState) => {
+                // The gesture has started. Show visual feedback so the user knows
+                // what is happening!
+                // gestureState.d{x,y} will be set to zero now
+                // console.log('onPanResponderGrant', gestureState);
+                console.log(this.state.gestureY._value, this._gestureY);
+                this.state.gestureY.setOffset(this._gestureY);
+                this.state.gestureY.setValue(0);
+                console.log('gestureY on grant', this.state.gestureY);
+            },
+            // The most recent move distance is gestureState.move{X,Y}
+            // The accumulated gesture distance since becoming responder is
+            // gestureState.d{x,y}
+            onPanResponderMove: Animated.event([
+                null, { dy: this.state.gestureY },
+            ]),
+            onPanResponderRelease: (evt, gestureState) => {
+                // The user has released all touches while this view is the
+                // responder. This typically means a gesture has succeeded
+                // console.log('onPanResponderRelease', gestureState);
+                // console.log('gestureState.dy', gestureState.dy);
+                this.state.gestureY.flattenOffset();
 
-					Animated.spring(this.state.gestureY, {
-						toValue: 125,
-						useNativeDriver: true,
-					}).start();
-					// this.state.gestureY.setValue(125);
-				} else {
-					console.log('vrati gde je bilo');
-					let originalPos;
-					if (gestureState.dy < 0) {
-						originalPos = 125
-					} else {
-						originalPos = -125
-					}
+                if (gestureState.dy < -75) {
+                    Animated.spring(this.state.gestureY, {
+                        toValue: -125,
+                        useNativeDriver: true,
+                    }).start();
+                } else if (gestureState.dy > 75) {
+                    Animated.spring(this.state.gestureY, {
+                        toValue: 125,
+                        useNativeDriver: true,
+                    }).start();
+                } else {
+                    let originalPos;
+                    if (gestureState.dy < 0) {
+                        originalPos = 125;
+                    } else {
+                        originalPos = -125;
+                    }
 
-					Animated.spring(this.state.gestureY, {
-						toValue: originalPos,
-						useNativeDriver: true,
-					}).start();
-				}
-				console.log('gestureY on release', this.state.gestureY);
-			},
-		});
-	}
+                    Animated.spring(this.state.gestureY, {
+                        toValue: originalPos,
+                        useNativeDriver: true,
+                    }).start();
+                }
+            },
+        });
+    }
 
-	componentDidMount() {
-		if (Platform.OS === 'android' && !Constants.isDevice) {
-			this.setState({
-				errorMessage: 'Oops, this will not work on Sketch in an Android emulator. Try it on your device!',
-			});
-		} else {
-			this._getLocationAsync();
-		}
+    componentDidUpdate(prevProps, prevState) {
+        console.log('TodayScreen update');
+    }
 
-		this.interval = setInterval(() => {
-			this.setState({
-				today: formattedToday()
-			})
-		}, 1000);
-	}
 
-	_getLocationAsync = async () => {
-		let { status } = await Permissions.askAsync(Permissions.LOCATION);
-		let locationService = await Location.hasServicesEnabledAsync();
+    render() {
+        const {
+            locationName,
+            todayData,
+        } = this.props.screenProps;
 
-		if (status !== 'granted' || !locationService) {
-			const ipApiParams = {
-				access_key: apiKeys.ipstack
-			}
+        let currentTemp = `${todayData.main.temp.toFixed(0)} °C`;
+        let maxTemp = `${todayData.main.temp_max.toFixed(0)} °C`;
+        let minTemp = `${todayData.main.temp_min.toFixed(0)} °C`;
+        let humidity = `${todayData.main.humidity} %`;
+        let pressure = `${todayData.main.pressure} hPa`;
+        let cloudiness = `${todayData.clouds.all} %`;
+        let windSpeed = `${todayData.wind.speed} m/s`;
+        let windDirection = `${todayData.wind.deg} deg`;
+        let icon = todayData.weather[0].icon;
+        let weatherDesc = capitalizeFirstLatter(todayData.weather[0].description);
+        let weatherIconSrc = `http://openweathermap.org/img/w/${icon}.png`;
 
-			getApiData(ipApi, ipApiParams)
-				.then(data => {
-					console.log('ipApi data', data)
-					let { lat, lon } = data;
-					this.onAppLoad(lat, lon);
-				});
-		} else {
-			let location = await Location.getCurrentPositionAsync({});
-			console.log('location data from device', location);
-			let { latitude, longitude } = location.coords;
-			this.onAppLoad(latitude, longitude);
-		}
+        let translateY = this.state.gestureY.interpolate({
+            inputRange: [-125, 125],
+            outputRange: [0, 210],
+            extrapolate: 'clamp'
+        });
 
-	};
+        let opacity = this.state.gestureY.interpolate({
+            inputRange: [-125, 20],
+            outputRange: [0, 1],
+            extrapolate: 'clamp'
+        });
 
-	componentWillUnmount() {
-		clearInterval(this.interval);
-	}
+        const AnimatedTouchable = Animated.createAnimatedComponent(TouchableOpacity);
 
-	onAppLoad = (lat, lon) => {
-		const initialWeatherParams = {
-			lat,
-			lon,
-			units: 'metric',
-			mode: 'JSON',
-			APPID: apiKeys.openWeather
-		}
+        return (
+            <Background
+                city={locationName}
+            >
+                <View style={styles.container} {...this._panResponder.panHandlers}>
+                    {
+                        weatherIconSrc &&
+                        <Image
+                            source={{ uri: weatherIconSrc }}
+                            style={{ width: 80, height: 80 }}
+                        />
+                    }
 
-		getApiData(openWeatherApi, initialWeatherParams).then(data => {
-			console.log(data);
-			let currentTemp = data.main.temp.toFixed(0);
-			let icon = data.weather[0].icon;
-			let desc = capitalizeFirstLatter(data.weather[0].description);
-			this.setState({
-				currentTemp,
-				weatherIconSrc: `http://openweathermap.org/img/w/${icon}.png`,
-				weatherDesc: desc
-			});
-		})
-	}
+                    {
+                        locationName &&
+                        <Text style={styles.name}>{locationName}</Text>
+                    }
 
-	onSearchSubmit = () => {
-		const initialWeatherParams = {
-			q: this.state.userSearch,
-			units: 'metric',
-			mode: 'JSON',
-			APPID: apiKeys.openWeather
-		}
+                    {
+                        weatherDesc &&
+                        <Text style={styles.type}>{weatherDesc}</Text>
+                    }
 
-		this.setState({ loading: true });
+                    {
+                        currentTemp &&
+                        <Text style={styles.temp}>{currentTemp}</Text>
+                    }
 
-		getApiData(openWeatherApi, initialWeatherParams)
-			.then(data => {
-				if (data.error) {
-					Alert.alert(
-						'Bad request',
-						'There was on error with you request. Please try again!'
-					)
-					this.setState({ loading: false });
-					return;
-				}
+                    <CurrentTime />
+                </View>
 
-				let locationName = data.name;
-				let currentTemp = data.main.temp.toFixed(0);
-				let icon = data.weather[0].icon;
-				let desc = capitalizeFirstLatter(data.weather[0].description);
+                <Animated.View
+                    style={{
+                        position: 'absolute',
+                        bottom: 0,
+                        left: 0,
+                        right: 0,
+                        zIndex: 3,
+                        height: 210,
+                        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                        flex: 1,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        transform: [{ translateY }]
+                    }}
+                >
+                    {
+                        maxTemp &&
+                        <Text style={styles.temp}>Max temperature: {maxTemp}</Text>
+                    }
 
-				this.setState({
-					locationName,
-					currentTemp,
-					weatherIconSrc: `http://openweathermap.org/img/w/${icon}.png`,
-					weatherDesc: desc,
-					loading: false,
-				});
+                    {
+                        minTemp &&
+                        <Text style={styles.temp}>Min temperature: {minTemp}</Text>
+                    }
 
-				Keyboard.dismiss();
-			})
-	}
+                    {
+                        humidity &&
+                        <Text style={styles.temp}>Humidity: {humidity}</Text>
+                    }
 
-	render() {
-		const {
-			errorMessage,
-			weatherIconSrc,
-			locationName,
-			weatherDesc,
-			currentTemp,
-			loading,
-		} = this.state;
+                    {
+                        pressure &&
+                        <Text style={styles.temp}>Pressure: {pressure}</Text>
+                    }
 
-		let translateY = this.state.gestureY.interpolate({
-			inputRange: [-125, 125],
-			outputRange: [0, 200],
-			extrapolate: 'clamp'
-		});
+                    {
+                        cloudiness &&
+                        <Text style={styles.temp}>Cloudiness: {cloudiness}</Text>
+                    }
 
-		let opacity = this.state.gestureY.interpolate({
-			inputRange: [-125, 20],
-			outputRange: [0, 1],
-			extrapolate: 'clamp'
-		});
+                    {
+                        windSpeed &&
+                        <Text style={styles.temp}>Wind speed: {windSpeed}</Text>
+                    }
 
-		const AnimatedTouchable = Animated.createAnimatedComponent(TouchableOpacity);
+                    {
+                        windDirection &&
+                        <Text style={styles.temp}>Wind direction: {windDirection}</Text>
+                    }
+                </Animated.View>
 
-		if (errorMessage) {
-			return (
-				<View style={styles.container}>
-					<Text style={styles.name}>{errorMessage}</Text>
-				</View>
-			);
-		}
-
-		return (
-			<Background
-				city={locationName}
-			>
-				{loading ?
-					<View style={styles.loadingWrap}>
-						<ActivityIndicator size="large" color="white" />
-					</View> : null
-				}
-				<KeyboardAvoidingView style={styles.container} behavior="padding" enabled {...this._panResponder.panHandlers}>
-					{
-						weatherIconSrc &&
-						<Image
-							source={{ uri: weatherIconSrc }}
-							style={{ width: 80, height: 80 }}
-						/>
-					}
-
-					{
-						locationName &&
-						<Text style={styles.name}>{locationName}</Text>
-					}
-
-					{
-						weatherDesc &&
-						<Text style={styles.type}>{weatherDesc}</Text>
-					}
-
-					{
-						currentTemp &&
-						<Text style={styles.temp}>{currentTemp} °C</Text>
-					}
-
-					<TextInput
-						style={styles.customInput}
-						placeholder="Enter City Name"
-						onChangeText={(text) => this.setState({
-							userSearch: text
-						})}
-					/>
-
-					<TouchableOpacity style={styles.btn} onPress={this.onSearchSubmit}>
-						<Text style={styles.btnText}>Search</Text>
-					</TouchableOpacity>
-
-					<Text
-						style={styles.updateTime}
-					>
-						{this.state.today}
-					</Text>
-				</KeyboardAvoidingView>
-
-				<Animated.View
-					style={{
-						position: 'absolute',
-						bottom: 0,
-						left: 0,
-						right: 0,
-						zIndex: 3,
-						height: 200,
-						backgroundColor: 'black',
-						flex: 1,
-						alignItems: 'center',
-						justifyContent: 'center',
-						transform: [{ translateY }]
-					}}
-				>
-					<Animated.Text
-						style={{
-							color: '#fff',
-							fontSize: 30,
-						}}
-					>
-						Title goes here
-					</Animated.Text>
-				</Animated.View>
-
-				<AnimatedTouchable
-					style={{
-						position: 'absolute',
-						bottom: 0,
-						left: 0,
-						right: 0,
-						zIndex: 3,
-						height: 50,
-						backgroundColor: 'rgba(0,0,0,0.5)',
-						flex: 1,
-						alignItems: 'center',
-						justifyContent: 'center',
-						opacity
-					}}
-					onPress={
-						() => Animated.spring(this.state.gestureY, {
-							toValue: -125,
-							speed: 2,
-							bounciness: 0,
-							useNativeDriver: true
-						}).start()
-					}
-				>
-					<Animated.Text
-						style={{
-							color: '#fff',
-							fontSize: 20,
-						}}
-					>
-						More data
-					</Animated.Text>
-				</AnimatedTouchable>
-			</Background>
-		);
-	}
+                <AnimatedTouchable
+                    style={{
+                        position: 'absolute',
+                        bottom: 0,
+                        left: 0,
+                        right: 0,
+                        zIndex: 3,
+                        height: 50,
+                        backgroundColor: 'rgba(0,0,0,0.5)',
+                        flex: 1,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        opacity
+                    }}
+                    onPress={
+                        () => Animated.spring(this.state.gestureY, {
+                            toValue: -125,
+                            speed: 2,
+                            bounciness: 0,
+                            useNativeDriver: true
+                        }).start()
+                    }
+                >
+                    <Animated.Text
+                        style={{
+                            color: '#fff',
+                            fontSize: 20,
+                        }}
+                    >
+                        More data
+                    </Animated.Text>
+                </AnimatedTouchable>
+            </Background>
+        );
+    }
 }
 
 TodayScreen.navigationOptions = {
-	header: null,
+    header: null,
 };
 
 const styles = StyleSheet.create({
-	container: {
-		flex: 1,
-		backgroundColor: 'rgba(0,0,0,0.5)',
-		alignItems: 'center',
-		justifyContent: 'center',
-	},
-	name: {
-		color: '#fff',
-		fontSize: 22,
-		marginBottom: 5,
-	},
-	type: {
-		color: '#fff',
-		fontSize: 18,
-		marginBottom: 5,
-	},
-	temp: {
-		color: '#fff',
-		fontSize: 16,
-		marginBottom: 5,
-	},
-	updateTime: {
-		color: '#fff',
-		fontSize: 14,
-	},
-	customInput: {
-		color: '#fff',
-		height: 35,
-		width: 150,
-		paddingLeft: 6,
-		marginTop: 20,
-		marginBottom: 20,
-		borderWidth: 1,
-		borderColor: '#fff',
-		borderRadius: 3
-	},
-	btn: {
-		backgroundColor: '#fff',
-		borderRadius: 3,
-		paddingVertical: 7,
-		paddingHorizontal: 15,
-		marginBottom: 20
-	},
-	btnText: {
-		color: '#000',
-		fontSize: 18,
-		fontWeight: 'bold'
-	},
-	loadingWrap: {
-		position: 'absolute',
-		backgroundColor: 'rgba(0,0,0,0.5)',
-		flex: 1,
-		alignItems: 'center',
-		justifyContent: 'center',
-		top: 0,
-		left: 0,
-		bottom: 0,
-		right: 0,
-	}
+    container: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    name: {
+        color: '#fff',
+        fontSize: 22,
+        marginBottom: 5,
+    },
+    type: {
+        color: '#fff',
+        fontSize: 18,
+        marginBottom: 5,
+    },
+    temp: {
+        color: '#fff',
+        fontSize: 16,
+        marginBottom: 5,
+    },
+    loadingWrap: {
+        position: 'absolute',
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        top: 0,
+        left: 0,
+        bottom: 0,
+        right: 0,
+    }
 });

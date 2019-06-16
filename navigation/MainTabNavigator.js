@@ -4,6 +4,7 @@ import {
 } from 'react-navigation';
 
 import TodayScreen from '../screens/TodayScreen';
+import DailyScreen from '../screens/DailyScreen';
 
 const TodayStack = createStackNavigator({
     Today: TodayScreen,
@@ -13,15 +14,25 @@ TodayStack.navigationOptions = {
     tabBarLabel: 'Today'
 };
 
-const Test = createStackNavigator({
-    Today: TodayScreen,
+const DailyStack = createStackNavigator({
+    Daily: DailyScreen,
 });
 
-Test.navigationOptions = {
-    tabBarLabel: 'Test'
+DailyStack.navigationOptions = {
+    tabBarLabel: 'Daily'
 };
 
 export default createMaterialTopTabNavigator({
     TodayStack,
-    Test,
+    DailyStack,
+}, {
+    tabBarOptions: {
+        style: {
+            backgroundColor: '#181819',
+        },
+        indicatorStyle: {
+            backgroundColor: 'white',
+            height: 3
+        }
+    }
 });

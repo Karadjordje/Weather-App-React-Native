@@ -1,7 +1,7 @@
 import React from 'react';
 import {
-	View,
-	ImageBackground,
+    View,
+    ImageBackground,
 } from 'react-native';
 import { getApiData } from '../utils';
 
@@ -11,32 +11,35 @@ import defaultImage from '../assets/uvac.jpg';
 const googleImgApi = 'https://www.googleapis.com/customsearch/v1';
 
 class Background extends React.Component {
-	constructor(props) {
-		super(props);
-		this.state = {
+    constructor(props) {
+        super(props);
+        this.state = {
             imgUrl: null,
             error: null,
-		}
+        };
     }
 
     componentDidUpdate(prevProps) {
+        console.log('stai update', prevProps.city);
+        console.log('novi update', this.props.city);
         if (prevProps.city !== this.props.city) {
             this.imageSearch(this.props.city);
         }
     }
 
-	imageSearch = (city) => {
-		const imageParams = {
-			q: city,
-			num: 1,
-			imgSize: 'xlarge',
-			searchType: 'image',
-			key: apiKeys.googleSearch,
-			cx: apiKeys.googleCx
-		}
+    imageSearch = (city) => {
+        console.log('imageSearch', city);
+        const imageParams = {
+            q: city,
+            num: 1,
+            imgSize: 'xlarge',
+            searchType: 'image',
+            key: apiKeys.googleSearch,
+            cx: apiKeys.googleCx
+        };
         this.setState({ error: null, loading: true });
-		getApiData(googleImgApi, imageParams)
-			.then(data => {
+        getApiData(googleImgApi, imageParams)
+            .then(data => {
                 if (data.error) {
                     this.setState({
                         error: true,
@@ -44,45 +47,46 @@ class Background extends React.Component {
                     });
                     return;
                 }
-				let imgUrl = data.items[0].link;
-				this.setState({
+                let imgUrl = data.items[0].link;
+                this.setState({
                     imgUrl,
                     error: false,
                     loading: false,
-				});
-			})
-	}
+                });
+            });
+    }
 
-	render() {
-		const {
+    render() {
+        console.log('Background image', this.props.city);
+        const {
             imgUrl,
             loading,
             error,
-		} = this.state;
+        } = this.state;
 
         const {
             children,
-		} = this.props;
+        } = this.props;
 
         if (loading || error) {
             return (
-				<View style={{ backgroundColor: 'black', width: '100%', height: '100%', flex: 1 }}>
-					{children}
-				</View>
-			);
-		}
+                <View style={{ backgroundColor: 'black', width: '100%', height: '100%', flex: 1 }}>
+                    {children}
+                </View>
+            );
+        }
 
-		return (
-			<ImageBackground
-				source={imgUrl ? { uri: imgUrl } : defaultImage}
-                style={{ width: '100%', height: '100%', flex: 1 }}
+        return (
+            <ImageBackground
+                source={imgUrl ? { uri: imgUrl } : defaultImage}
+                style={{ width: '100%', height: '100%', flex: 1, position: 'relative' }}
                 onError={() => this.setState({ error: true })}
                 defaultSource={require('../assets/dark.jpg')}
-			>
-				{children}
-			</ImageBackground>
-		);
-	}
+            >
+                {children}
+            </ImageBackground>
+        );
+    }
 }
 
 export default Background;
