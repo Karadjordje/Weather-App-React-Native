@@ -78,6 +78,7 @@ class Background extends React.Component {
 
         return (
             <ImageBackground
+                key={this.props.city}
                 source={imgUrl ? { uri: imgUrl } : defaultImage}
                 style={{ width: '100%', height: '100%', flex: 1, position: 'relative' }}
                 onError={() => this.setState({ error: true })}

@@ -1,13 +1,14 @@
 import React from 'react';
 import {
     View,
+    Text,
     StyleSheet,
     Platform,
     ActivityIndicator,
     Alert
 } from 'react-native';
 import { Constants, Location, Permissions } from 'expo';
-import { capitalizeFirstLatter, getApiData } from './utils';
+import { getApiData } from './utils';
 
 import SearchBar from './components/SearchBar';
 
@@ -25,7 +26,7 @@ export default class App extends React.Component {
             locationName: 'Weather in your area',
             errorMessage: null,
             userSearch: null,
-            dataError: false,
+            dataError: null,
             userIpData: {},
             todayData: null,
             loading: true,
@@ -43,6 +44,7 @@ export default class App extends React.Component {
     }
 
     _getLocationAsync = async () => {
+        this.setState({ loading: true });
         let { status } = await Permissions.askAsync(Permissions.LOCATION);
         let locationService = await Location.hasServicesEnabledAsync();
 
@@ -54,6 +56,12 @@ export default class App extends React.Component {
             getApiData(ipApi, ipApiParams)
                 .then(data => {
                     console.log('ipApi data', data);
+                    if (data.error) {
+                        console.log('ima error');
+                        this.setState({ dataError: data.error.info, loading: false });
+                        return;
+                    }
+
                     let { latitude, longitude } = data;
                     this.onAppLoad(latitude, longitude);
                 });
@@ -74,15 +82,20 @@ export default class App extends React.Component {
             APPID: apiKeys.openWeather
         };
 
-        this.setState({ loading: true });
+        getApiData(openWeatherApi, initialWeatherParams)
+            .then(data => {
+                console.log(data);
+                if (data.error) {
+                    this.setState({ dataError: data.error, loading: false });
+                    return;
+                }
 
-        getApiData(openWeatherApi, initialWeatherParams).then(data => {
-            console.log(data);
-            this.setState({
-                todayData: data,
-                loading: false
+                this.setState({
+                    todayData: data,
+                    loading: false,
+                    dataError: null
+                });
             });
-        });
     }
 
     searchSubmit = () => {
@@ -117,11 +130,6 @@ export default class App extends React.Component {
             });
     }
 
-    componentDidUpdate(prevProps, prevState) {
-        console.log('app se update');
-    }
-
-
     cityChange = (text) => {
         this.setState({
             userSearch: text
@@ -129,7 +137,7 @@ export default class App extends React.Component {
     }
 
     render() {
-        const { loading, todayData, errorMessage, locationName } = this.state;
+        const { loading, todayData, errorMessage, dataError, locationName } = this.state;
 
         const screenProps = {
             locationName,
@@ -139,7 +147,15 @@ export default class App extends React.Component {
         if (errorMessage) {
             return (
                 <View style={styles.loadingWrap}>
-                    <Text>{errorMessage}</Text>
+                    <Text style={styles.error}>{errorMessage}</Text>
+                </View>
+            );
+        }
+
+        if (dataError) {
+            return (
+                <View style={styles.loadingWrap}>
+                    <Text style={styles.error}>{dataError}</Text>
                 </View>
             );
         }
@@ -171,5 +187,9 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         backgroundColor: '#000',
+    },
+    error: {
+        color: 'red',
+        padding: 10
     }
 });

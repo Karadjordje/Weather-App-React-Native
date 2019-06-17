@@ -5,22 +5,14 @@ import {
     Text,
     Image,
     TouchableOpacity,
-    Alert,
-    Platform,
-    ActivityIndicator,
     PanResponder,
     Animated,
 } from 'react-native';
-import { Constants, Location, Permissions } from 'expo';
-import { capitalizeFirstLatter, getApiData } from '../utils';
+
+import { capitalizeFirstLatter } from '../utils';
 
 import Background from '../components/Background';
 import CurrentTime from '../components/CurrentTime';
-
-import apiKeys from '../apikeys';
-
-const ipApi = 'http://api.ipstack.com/check';
-const openWeatherApi = 'http://api.openweathermap.org/data/2.5/weather';
 
 export default class TodayScreen extends React.Component {
     constructor(props) {
@@ -89,11 +81,6 @@ export default class TodayScreen extends React.Component {
             },
         });
     }
-
-    componentDidUpdate(prevProps, prevState) {
-        console.log('TodayScreen update');
-    }
-
 
     render() {
         const {
