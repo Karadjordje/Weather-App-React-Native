@@ -18,6 +18,7 @@ const SearchBar = ({ onSearchSubmit, onCityChange }) => {
                     placeholder="Enter City Name"
                     placeholderTextColor={'#000'}
                     onChangeText={(text) => onCityChange(text)}
+                    onSubmitEditing={onSearchSubmit}
                 />
 
                 <TouchableOpacity style={styles.btn} onPress={onSearchSubmit} >

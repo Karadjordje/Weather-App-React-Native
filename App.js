@@ -3,7 +3,6 @@ import {
     View,
     Text,
     StyleSheet,
-    Platform,
     ActivityIndicator,
     Alert
 } from 'react-native';
@@ -18,6 +17,7 @@ import apiKeys from './apikeys';
 
 const ipApi = 'http://api.ipstack.com/check';
 const openWeatherApi = 'http://api.openweathermap.org/data/2.5/weather';
+const forecastApi = 'http://api.openweathermap.org/data/2.5/forecast';
 
 export default class App extends React.Component {
     constructor(props) {
@@ -29,18 +29,13 @@ export default class App extends React.Component {
             dataError: null,
             userIpData: {},
             todayData: null,
+            dailyData: null,
             loading: true,
         };
     }
 
     componentDidMount() {
-        if (Platform.OS === 'android' && !Constants.isDevice) {
-            this.setState({
-                errorMessage: 'Oops, this will not work on Sketch in an Android emulator. Try it on your device!',
-            });
-        } else {
-            this._getLocationAsync();
-        }
+        this._getLocationAsync();
     }
 
     _getLocationAsync = async () => {
@@ -74,6 +69,7 @@ export default class App extends React.Component {
     };
 
     onAppLoad = (lat, lon) => {
+        console.log('on app load');
         const initialWeatherParams = {
             lat,
             lon,
@@ -82,23 +78,62 @@ export default class App extends React.Component {
             APPID: apiKeys.openWeather
         };
 
-        getApiData(openWeatherApi, initialWeatherParams)
-            .then(data => {
-                console.log(data);
-                if (data.error) {
-                    this.setState({ dataError: data.error, loading: false });
-                    return;
-                }
+        Promise.all([
+            getApiData(openWeatherApi, initialWeatherParams),
+            getApiData(forecastApi, initialWeatherParams)
+        ]).then(([todayData, dailyData]) => {
+            if (todayData.error) {
+                this.setState({ dataError: data.error, loading: false });
+                return;
+            }
 
-                this.setState({
-                    todayData: data,
-                    loading: false,
-                    dataError: null
-                });
+            if (dailyData.error) {
+                this.setState({ dataError: data.error, loading: false });
+                return;
+            }
+
+            this.setState({
+                todayData: todayData,
+                dailyData: dailyData,
+                loading: false,
+                dataError: null
             });
+        }).catch(err => {
+            this.setState({ dataError: err.error, loading: false });
+        });
+
+        // getApiData(openWeatherApi, initialWeatherParams)
+        //     .then(data => {
+        //         if (data.error) {
+        //             this.setState({ dataError: data.error, loading: false });
+        //             return;
+        //         }
+
+        //         this.setState({
+        //             todayData: data,
+        //             loading: false,
+        //             dataError: null
+        //         });
+        //     });
+
+        // getApiData(forecastApi, initialWeatherParams)
+        //     .then(data => {
+        //         if (data.error) {
+        //             this.setState({ dataError: data.error, loading: false });
+        //             return;
+        //         }
+
+        //         this.setState({
+        //             dailyData: data,
+        //             loading: false,
+        //             dataError: null
+        //         });
+        //     });
     }
 
     searchSubmit = () => {
+        this.setState({ loading: true });
+
         const weatherParams = {
             q: this.state.userSearch,
             units: 'metric',
@@ -106,28 +141,80 @@ export default class App extends React.Component {
             APPID: apiKeys.openWeather
         };
 
-        this.setState({ loading: true });
+        Promise.all([
+            getApiData(openWeatherApi, weatherParams),
+            getApiData(forecastApi, weatherParams)
+        ]).then(([todayData, dailyData]) => {
+            if (todayData.error) {
+                Alert.alert(
+                    'Bad request',
+                    'There was on error with you request. Please try again!'
+                );
+                this.setState({ loading: false });
+                return;
+            }
 
-        getApiData(openWeatherApi, weatherParams)
-            .then(data => {
-                if (data.error) {
-                    Alert.alert(
-                        'Bad request',
-                        'There was on error with you request. Please try again!'
-                    );
-                    this.setState({ loading: false });
-                    return;
-                }
+            if (dailyData.error) {
+                Alert.alert(
+                    'Bad request',
+                    'There was on error with you request. Please try again!'
+                );
+                this.setState({ loading: false });
+                return;
+            }
 
-                let locationName = data.name;
-                console.log('search submit');
-                this.setState({
-                    locationName,
-                    todayData: data,
-                    loading: false,
-                });
+            let locationName = todayData.name;
 
+            this.setState({
+                locationName,
+                todayData: todayData,
+                dailyData: dailyData,
+                loading: false,
+                dataError: null
             });
+        }).catch(err => {
+            this.setState({ dataError: err.error, loading: false });
+        });
+
+
+        // getApiData(openWeatherApi, weatherParams)
+        //     .then(data => {
+        //         if (data.error) {
+        //             Alert.alert(
+        //                 'Bad request',
+        //                 'There was on error with you request. Please try again!'
+        //             );
+        //             this.setState({ loading: false });
+        //             return;
+        //         }
+
+        //         let locationName = data.name;
+        //         console.log('search submit');
+        //         this.setState({
+        //             locationName,
+        //             todayData: data,
+        //             loading: false,
+        //         });
+
+        //     });
+
+        // getApiData(forecastApi, weatherParams)
+        //     .then(data => {
+        //         if (data.error) {
+        //             Alert.alert(
+        //                 'Bad request',
+        //                 'There was on error with you request. Please try again!'
+        //             );
+        //             this.setState({ loading: false });
+        //             return;
+        //         }
+
+        //         this.setState({
+        //             dailyData: data,
+        //             loading: false,
+        //         });
+
+        //     });
     }
 
     cityChange = (text) => {
@@ -137,11 +224,13 @@ export default class App extends React.Component {
     }
 
     render() {
-        const { loading, todayData, errorMessage, dataError, locationName } = this.state;
+        const { loading, todayData, dailyData, errorMessage, dataError, locationName } = this.state;
+        console.log(loading);
 
         const screenProps = {
             locationName,
-            todayData
+            todayData,
+            dailyData
         };
 
         if (errorMessage) {

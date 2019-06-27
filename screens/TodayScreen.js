@@ -6,7 +6,7 @@ import {
     Image,
     TouchableOpacity,
     PanResponder,
-    Animated,
+    Animated
 } from 'react-native';
 
 import { capitalizeFirstLatter } from '../utils';
@@ -22,15 +22,16 @@ export default class TodayScreen extends React.Component {
         };
 
         this._gestureY = 0;
-        // this.state.gestureY.setOffset(0);
+
         this.state.gestureY.addListener(({ value }) => {
             this._gestureY = value;
         });
+
         this._panResponder = PanResponder.create({
             // Ask to be the responder:
             onMoveShouldSetPanResponderCapture: (evt, gestureState) => {
                 // Don't do anything on taps
-                return Math.abs(gestureState.dx) > 3 && Math.abs(gestureState.dy) > 3;
+                return Math.abs(gestureState.dx) > 1 && Math.abs(gestureState.dy) > 1;
             },
             onPanResponderGrant: (evt, gestureState) => {
                 // The gesture has started. Show visual feedback so the user knows
